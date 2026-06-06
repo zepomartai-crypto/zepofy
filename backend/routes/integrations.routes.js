@@ -20,6 +20,7 @@ router.get('/whatsapp', getIntegration);
 // router.post('/whatsapp/save', saveIntegration);
 router.post('/whatsapp/verify-token', verifyToken);
 router.post('/whatsapp/connect', connectWhatsApp);
+router.post('/whatsapp/embedded-signup', require('../controllers/integrations.controller').embeddedSignup);
 router.post('/whatsapp/disconnect', disconnectWhatsApp);
 router.post('/whatsapp/test', testConnection);
 router.post('/whatsapp/regenerate-webhook-token', require('../controllers/integrations.controller').regenerateWebhookToken);

@@ -390,3 +390,117 @@ exports.getOverallStatus = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+/* ================= WHATSAPP EMBEDDED SIGNUP ================= */
+exports.embeddedSignup = async (req, res) => {
+  try {
+    const { code } = req.body;
+    if (!code) {
+      return res.status(400).json({ success: false, error: 'Code is required' });
+    }
+
+    const appId = process.env.META_APP_ID;
+    const appSecret = process.env.META_APP_SECRET;
+
+    if (!appId || !appSecret) {
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Meta App ID or App Secret is not configured on the server.' 
+      });
+    }
+
+    const axios = require('axios');
+
+    // Step 2: Exchange code for access token
+    console.log('🔄 Exchanging OAuth code for Meta access token...');
+    const tokenResponse = await axios.get('https://graph.facebook.com/v19.0/oauth/access_token', {
+      params: {
+        client_id: appId,
+        client_secret: appSecret,
+        code
+      }
+    });
+
+    const accessToken = tokenResponse.data.access_token;
+    if (!accessToken) {
+      throw new Error('Failed to retrieve access token from Meta.');
+    }
+
+    // Step 3: Fetch WABA ID
+    console.log('🔄 Fetching WABA ID from Meta...');
+    const wabaResponse = await axios.get('https://graph.facebook.com/v19.0/me/whatsapp_business_accounts', {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+
+    const wabaData = wabaResponse.data.data;
+    if (!wabaData || wabaData.length === 0) {
+      throw new Error('No WhatsApp Business Accounts found for this Meta user.');
+    }
+    const wabaId = wabaData[0].id;
+
+    // Step 4: Fetch Phone Number details
+    console.log(`🔄 Fetching Phone Numbers for WABA: ${wabaId}...`);
+    const phoneResponse = await axios.get(`https://graph.facebook.com/v19.0/${wabaId}/phone_numbers`, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+
+    const phoneData = phoneResponse.data.data;
+    if (!phoneData || phoneData.length === 0) {
+      throw new Error('No phone numbers found in this WhatsApp Business Account.');
+    }
+    const phoneNumberId = phoneData[0].id;
+    const businessPhoneNumber = phoneData[0].display_phone_number;
+
+    console.log('✅ Retrieved embedded signup details:', { wabaId, phoneNumberId, businessPhoneNumber });
+
+    // Step 6: Connect WhatsApp
+    const integration = await whatsappIntegrationService.connectWhatsApp(req.userId, {
+      wabaId,
+      phoneNumberId,
+      businessPhoneNumber,
+      accessToken,
+      appId
+    });
+
+    console.log('✅ WhatsApp connected successfully via embedded signup for user:', req.userId);
+
+    // Auto-update integration status
+    const userStatusService = require('../services/userStatusService');
+    await userStatusService.updateUserIntegrationStatus(req.userId);
+
+    const webhookInfo = whatsappIntegrationService.getWebhookUrls(integration);
+
+    // 📝 Log Integration Success
+    try {
+      const SystemLog = require("../models/SystemLog");
+      await SystemLog.create({
+        type: "info",
+        message: `WhatsApp connected successfully via Embedded Signup for user: ${req.userId}`,
+        userId: req.userId,
+        ip: req.ip
+      });
+    } catch (logErr) {
+      console.error("❌ Failed to log integration success:", logErr.message);
+    }
+
+    res.json({
+      success: true,
+      message: 'WhatsApp connected successfully via Embedded Signup',
+      data: {
+        ...integration.toJSON(),
+        connected: true,
+        maskedAccessToken: integration.maskedAccessToken,
+        webhookUrl: webhookInfo.webhookUrl,
+        webhookVerifyToken: integration.webhookVerifyToken
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error in WhatsApp Embedded Signup:', error.response?.data || error.message);
+    const apiError = error.response?.data?.error?.message || error.message;
+    res.status(500).json({
+      success: false,
+      error: apiError || 'Failed to complete WhatsApp Embedded Signup'
+    });
+  }
+};

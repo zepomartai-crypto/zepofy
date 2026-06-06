@@ -3,6 +3,12 @@ import { FiMessageSquare, FiWifiOff, FiRefreshCw, FiLink, FiCopy, FiCheckCircle,
 import api from '../../api/api';
 import { useIntegration } from '../../context/IntegrationContext';
 
+const FacebookIcon = () => (
+  <svg className="w-5 h-5 mr-3 fill-current" viewBox="0 0 24 24">
+    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+  </svg>
+);
+
 const WhatsAppIntegration = ({ successMessage, errorMessage, setSuccessMessage, setErrorMessage }) => {
     const { refreshStatus } = useIntegration();
     const [loading, setLoading] = useState(true);
@@ -57,6 +63,72 @@ const WhatsAppIntegration = ({ successMessage, errorMessage, setSuccessMessage, 
     useEffect(() => {
         fetchStatus();
     }, []);
+
+    // Load Meta Facebook SDK for Embedded Signup
+    useEffect(() => {
+        window.fbAsyncInit = function () {
+            window.FB.init({
+                appId: import.meta.env.VITE_META_APP_ID,
+                autoLogAppEvents: true,
+                xfbml: true,
+                version: 'v19.0'
+            });
+        };
+
+        // Load SDK script
+        if (!document.getElementById('facebook-jssdk')) {
+            const script = document.createElement('script');
+            script.id = 'facebook-jssdk';
+            script.src = 'https://connect.facebook.net/en_US/sdk.js';
+            document.body.appendChild(script);
+        }
+    }, []);
+
+    const handleFacebookConnect = () => {
+        if (!window.FB) {
+            setErrorMessage("Facebook SDK not loaded yet. Please wait and try again.");
+            return;
+        }
+
+        setConnecting(true);
+        setErrorMessage('');
+        setSuccessMessage('');
+
+        window.FB.login(
+            (response) => {
+                if (response.authResponse && response.authResponse.code) {
+                    const code = response.authResponse.code;
+                    api
+                        .post("/integrations/whatsapp/embedded-signup", { code })
+                        .then(async (res) => {
+                            if (res.data.success) {
+                                setSuccessMessage("WhatsApp connected via Facebook successfully!");
+                                await refreshStatus();
+                                fetchStatus();
+                            } else {
+                                setErrorMessage(res.data.error || "Failed to connect via Facebook");
+                            }
+                        })
+                        .catch((err) => {
+                            console.error("Facebook connect backend error:", err);
+                            setErrorMessage(err.response?.data?.error || "Failed to connect via Facebook");
+                        })
+                        .finally(() => {
+                            setConnecting(false);
+                        });
+                } else {
+                    setErrorMessage("Facebook login was cancelled or failed.");
+                    setConnecting(false);
+                }
+            },
+            {
+                config_id: import.meta.env.VITE_META_CONFIG_ID,
+                response_type: "code",
+                override_default_response_type: true,
+                extras: { setup: {}, featureType: "", sessionInfoVersion: "3" },
+            }
+        );
+    };
 
     const handleInputChange = (e) => {
         e.stopPropagation();
@@ -289,7 +361,24 @@ const WhatsAppIntegration = ({ successMessage, errorMessage, setSuccessMessage, 
                                     <FiSettings className="text-indigo-600" /> API Configuration
                                 </h3>
                             </div>
-                            <form onSubmit={handleConnect} className="p-8 space-y-8">
+                            <div className="p-8 pb-0">
+                                <button
+                                    type="button"
+                                    onClick={handleFacebookConnect}
+                                    disabled={connecting}
+                                    className="w-full flex items-center justify-center px-6 py-4.5 bg-[#1877F2] hover:bg-[#166fe5] text-white rounded-[20px] font-semibold transition-colors disabled:opacity-50 text-base shadow-sm"
+                                >
+                                    <FacebookIcon />
+                                    {connecting ? "Connecting..." : "Connect with Facebook"}
+                                </button>
+
+                                <div className="flex items-center my-6">
+                                    <div className="flex-1 border-t border-slate-200"></div>
+                                    <span className="px-4 text-sm text-slate-400 font-medium bg-white">OR enter credentials manually</span>
+                                    <div className="flex-1 border-t border-slate-200"></div>
+                                </div>
+                            </div>
+                            <form onSubmit={handleConnect} className="p-8 pt-0 space-y-8">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div className="space-y-3">
                                         <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-widest ml-1">Phone Number ID*</label>

@@ -29,6 +29,12 @@ import {
   FiEyeOff,
 } from "react-icons/fi";
 
+const FacebookIcon = () => (
+  <svg className="w-5 h-5 mr-3 fill-current" viewBox="0 0 24 24">
+    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+  </svg>
+);
+
 export default function WhatsAppIntegrations() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -57,16 +63,82 @@ export default function WhatsAppIntegrations() {
   const WEBHOOK_BASE = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
   const webhookUrl = `${WEBHOOK_BASE}/api/webhook/whatsapp/${integration?.userId || 'USER_ID'}`;
 
+  // Load Meta Facebook SDK for Embedded Signup
+  useEffect(() => {
+    window.fbAsyncInit = function () {
+      window.FB.init({
+        appId: import.meta.env.VITE_META_APP_ID,
+        autoLogAppEvents: true,
+        xfbml: true,
+        version: 'v19.0'
+      });
+    };
+
+    // Load SDK script
+    if (!document.getElementById('facebook-jssdk')) {
+      const script = document.createElement('script');
+      script.id = 'facebook-jssdk';
+      script.src = 'https://connect.facebook.net/en_US/sdk.js';
+      document.body.appendChild(script);
+    }
+  }, []);
+
   useEffect(() => {
     api.get("/whatsapp/integration").then(res => {
       setIntegration(res.data);
     });
   }, []);
 
-
   useEffect(() => {
     loadIntegration();
   }, []);
+
+  const handleFacebookConnect = () => {
+    if (!window.FB) {
+      setError("Facebook SDK not loaded yet. Please wait and try again.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    window.FB.login(
+      (response) => {
+        if (response.authResponse && response.authResponse.code) {
+          const code = response.authResponse.code;
+          api
+            .post("/integrations/whatsapp/embedded-signup", { code })
+            .then(async (res) => {
+              if (res.data.success) {
+                setSuccess("WhatsApp connected via Facebook successfully!");
+                setConnected(true);
+                setIntegration(res.data.data || res.data.integration);
+                await loadIntegration();
+              } else {
+                setError(res.data.error || "Failed to connect via Facebook");
+              }
+            })
+            .catch((err) => {
+              console.error("Facebook connect backend error:", err);
+              setError(err.response?.data?.error || "Failed to connect via Facebook");
+            })
+            .finally(() => {
+              setLoading(false);
+            });
+        } else {
+          setError("Facebook login was cancelled or failed.");
+          setLoading(false);
+        }
+      },
+      {
+        config_id: import.meta.env.VITE_META_CONFIG_ID,
+        response_type: "code",
+        override_default_response_type: true,
+        extras: { setup: {}, featureType: "", sessionInfoVersion: "3" },
+      }
+    );
+  };
 
   const loadIntegration = async () => {
     try {
@@ -456,6 +528,28 @@ export default function WhatsAppIntegrations() {
                       <h3 className="text-2xl font-bold text-slate-900 mb-2">Connect WhatsApp Form</h3>
                       <p className="text-slate-600">Enter your WhatsApp Business API credentials to establish connection.</p>
                     </div>
+
+                    {!connected && (
+                      <>
+                        <div className="mb-6">
+                          <button
+                            type="button"
+                            onClick={handleFacebookConnect}
+                            disabled={loading}
+                            className="w-full flex items-center justify-center px-6 py-4 bg-[#1877F2] hover:bg-[#166fe5] text-white rounded-[12px] font-semibold transition-colors disabled:opacity-50 text-base shadow-sm"
+                          >
+                            <FacebookIcon />
+                            {loading ? "Connecting..." : "Connect with Facebook"}
+                          </button>
+                        </div>
+
+                        <div className="flex items-center my-6">
+                          <div className="flex-1 border-t border-slate-200"></div>
+                          <span className="px-4 text-sm text-slate-400 font-medium bg-white">OR enter credentials manually</span>
+                          <div className="flex-1 border-t border-slate-200"></div>
+                        </div>
+                      </>
+                    )}
 
                     <form onSubmit={connected ? handleUpdate : handleConnect} className="space-y-8">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
