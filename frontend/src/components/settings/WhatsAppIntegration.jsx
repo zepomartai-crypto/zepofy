@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FiMessageSquare, FiWifiOff, FiRefreshCw, FiLink, FiCopy, FiCheckCircle, FiInfo, FiExternalLink, FiSettings, FiShield, FiKey, FiZap, FiGlobe, FiCheck, FiActivity } from 'react-icons/fi';
 import api from '../../api/api';
 import { useIntegration } from '../../context/IntegrationContext';
@@ -16,6 +16,10 @@ const WhatsAppIntegration = ({ successMessage, errorMessage, setSuccessMessage, 
     const [fbLoading, setFbLoading] = useState(false);
     const [whatsappInfo, setWhatsappInfo] = useState(null);
     const [copied, setCopied] = useState('');
+
+    const sessionDataRef = useRef(null);
+    const authCodeRef = useRef(null);
+    const exchangeInProgressRef = useRef(false);
 
     const [formData, setFormData] = useState({
         phoneNumberId: '',
@@ -79,8 +83,18 @@ const WhatsAppIntegration = ({ successMessage, errorMessage, setSuccessMessage, 
 
             window.addEventListener('message', (event) => {
                 if (event.origin !== "https://www.facebook.com") return;
-                // store WABA and phone IDs from session info if present
-                console.log('Meta session info:', event.data);
+                try {
+                    const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+                    if (data.type === 'WA_EMBEDDED_SIGNUP') {
+                        if (data.event === 'FINISH') {
+                            sessionDataRef.current = {
+                                phone_number_id: data.data.phone_number_id,
+                                waba_id: data.data.waba_id
+                            };
+                            console.log('Meta session info stored:', sessionDataRef.current);
+                        }
+                    }
+                } catch(e) {}
             });
         };
 
@@ -105,9 +119,21 @@ const WhatsAppIntegration = ({ successMessage, errorMessage, setSuccessMessage, 
         setErrorMessage('');
         setSuccessMessage('');
 
-        const exchangeCodeWithBackend = (code) => {
+        // Clear refs from previous click
+        sessionDataRef.current = null;
+        authCodeRef.current = null;
+        exchangeInProgressRef.current = false;
+
+        const exchangeCodeWithBackend = (code, session) => {
+            if (exchangeInProgressRef.current) return;
+            exchangeInProgressRef.current = true;
+
             api
-                .post("/integrations/whatsapp/embedded-signup", { code })
+                .post("/integrations/whatsapp/embedded-signup", { 
+                    code,
+                    phone_number_id: session.phone_number_id,
+                    waba_id: session.waba_id
+                })
                 .then(async (res) => {
                     if (res.data.success) {
                         setSuccessMessage("WhatsApp connected via Facebook successfully!");
@@ -123,13 +149,33 @@ const WhatsAppIntegration = ({ successMessage, errorMessage, setSuccessMessage, 
                 })
                 .finally(() => {
                     setFbLoading(false);
+                    exchangeInProgressRef.current = false;
                 });
         };
 
         window.FB.login(
             function(response) {
                 if (response.authResponse && response.authResponse.code) {
-                    exchangeCodeWithBackend(response.authResponse.code);
+                    authCodeRef.current = response.authResponse.code;
+                    if (sessionDataRef.current) {
+                        exchangeCodeWithBackend(response.authResponse.code, sessionDataRef.current);
+                    } else {
+                        // Check every 100ms for session info, up to 5 seconds
+                        let checkInterval = setInterval(() => {
+                            if (sessionDataRef.current) {
+                                clearInterval(checkInterval);
+                                exchangeCodeWithBackend(authCodeRef.current, sessionDataRef.current);
+                            }
+                        }, 100);
+
+                        setTimeout(() => {
+                            clearInterval(checkInterval);
+                            if (!sessionDataRef.current) {
+                                setFbLoading(false);
+                                setErrorMessage('Facebook login completed, but WABA session info was not received. Please try again.');
+                            }
+                        }, 5000);
+                    }
                 } else {
                     setFbLoading(false);
                     setErrorMessage('Facebook login was cancelled or failed.');

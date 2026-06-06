@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/api";
 import {
@@ -43,6 +43,10 @@ export default function WhatsAppIntegrations() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const sessionDataRef = useRef(null);
+  const authCodeRef = useRef(null);
+  const exchangeInProgressRef = useRef(false);
+
   // Form state - EXACT field names as required by backend
   const [formData, setFormData] = useState({
     wabaId: "",
@@ -78,8 +82,18 @@ export default function WhatsAppIntegrations() {
 
       window.addEventListener('message', (event) => {
         if (event.origin !== "https://www.facebook.com") return;
-        // store WABA and phone IDs from session info if present
-        console.log('Meta session info:', event.data);
+        try {
+          const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+          if (data.type === 'WA_EMBEDDED_SIGNUP') {
+            if (data.event === 'FINISH') {
+              sessionDataRef.current = {
+                phone_number_id: data.data.phone_number_id,
+                waba_id: data.data.waba_id
+              };
+              console.log('Meta session info stored:', sessionDataRef.current);
+            }
+          }
+        } catch(e) {}
       });
     };
 
@@ -113,9 +127,21 @@ export default function WhatsAppIntegrations() {
     setFbLoading(true);
     setError('');
     
-    const exchangeCodeWithBackend = (code) => {
+    // Clear refs from previous click
+    sessionDataRef.current = null;
+    authCodeRef.current = null;
+    exchangeInProgressRef.current = false;
+    
+    const exchangeCodeWithBackend = (code, session) => {
+      if (exchangeInProgressRef.current) return;
+      exchangeInProgressRef.current = true;
+
       api
-        .post("/integrations/whatsapp/embedded-signup", { code })
+        .post("/integrations/whatsapp/embedded-signup", { 
+          code,
+          phone_number_id: session.phone_number_id,
+          waba_id: session.waba_id
+        })
         .then(async (res) => {
           if (res.data.success) {
             setSuccess("WhatsApp connected via Facebook successfully!");
@@ -132,13 +158,33 @@ export default function WhatsAppIntegrations() {
         })
         .finally(() => {
           setFbLoading(false);
+          exchangeInProgressRef.current = false;
         });
     };
 
     window.FB.login(
       function(response) {
         if (response.authResponse && response.authResponse.code) {
-          exchangeCodeWithBackend(response.authResponse.code);
+          authCodeRef.current = response.authResponse.code;
+          if (sessionDataRef.current) {
+            exchangeCodeWithBackend(response.authResponse.code, sessionDataRef.current);
+          } else {
+            // Check every 100ms for session info, up to 5 seconds
+            let checkInterval = setInterval(() => {
+              if (sessionDataRef.current) {
+                clearInterval(checkInterval);
+                exchangeCodeWithBackend(authCodeRef.current, sessionDataRef.current);
+              }
+            }, 100);
+            
+            setTimeout(() => {
+              clearInterval(checkInterval);
+              if (!sessionDataRef.current) {
+                setFbLoading(false);
+                setError('Facebook login completed, but WABA session info was not received. Please try again.');
+              }
+            }, 5000);
+          }
         } else {
           setFbLoading(false);
           setError('Facebook login was cancelled or failed.');

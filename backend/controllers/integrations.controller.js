@@ -394,9 +394,12 @@ exports.getOverallStatus = async (req, res) => {
 /* ================= WHATSAPP EMBEDDED SIGNUP ================= */
 exports.embeddedSignup = async (req, res) => {
   try {
-    const { code } = req.body;
-    if (!code) {
-      return res.status(400).json({ success: false, error: 'Code is required' });
+    const { code, phone_number_id, waba_id } = req.body;
+    if (!code || !phone_number_id || !waba_id) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'code, phone_number_id, and waba_id are required' 
+      });
     }
 
     const appId = process.env.META_APP_ID;
@@ -411,7 +414,7 @@ exports.embeddedSignup = async (req, res) => {
 
     const axios = require('axios');
 
-    // Step 2: Exchange code for access token
+    // Step 1: Exchange code for access token
     console.log('🔄 Exchanging OAuth code for Meta access token...');
     const tokenResponse = await axios.get('https://graph.facebook.com/v19.0/oauth/access_token', {
       params: {
@@ -426,37 +429,27 @@ exports.embeddedSignup = async (req, res) => {
       throw new Error('Failed to retrieve access token from Meta.');
     }
 
-    // Step 3: Fetch WABA ID
-    console.log('🔄 Fetching WABA ID from Meta...');
-    const wabaResponse = await axios.get('https://graph.facebook.com/v19.0/me/whatsapp_business_accounts', {
-      headers: { Authorization: `Bearer ${accessToken}` }
+    // Step 2: Fetch Phone Number details using the provided ID
+    console.log(`🔄 Fetching display phone number for ID: ${phone_number_id}...`);
+    const phoneResponse = await axios.get(`https://graph.facebook.com/v19.0/${phone_number_id}`, {
+      params: {
+        fields: 'display_phone_number,verified_name',
+        access_token: accessToken
+      }
     });
 
-    const wabaData = wabaResponse.data.data;
-    if (!wabaData || wabaData.length === 0) {
-      throw new Error('No WhatsApp Business Accounts found for this Meta user.');
+    const phoneData = phoneResponse.data;
+    if (!phoneData || !phoneData.display_phone_number) {
+      throw new Error('Failed to retrieve phone number details from Meta.');
     }
-    const wabaId = wabaData[0].id;
+    const businessPhoneNumber = phoneData.display_phone_number;
 
-    // Step 4: Fetch Phone Number details
-    console.log(`🔄 Fetching Phone Numbers for WABA: ${wabaId}...`);
-    const phoneResponse = await axios.get(`https://graph.facebook.com/v19.0/${wabaId}/phone_numbers`, {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    });
+    console.log('✅ Retrieved embedded signup details:', { waba_id, phone_number_id, businessPhoneNumber });
 
-    const phoneData = phoneResponse.data.data;
-    if (!phoneData || phoneData.length === 0) {
-      throw new Error('No phone numbers found in this WhatsApp Business Account.');
-    }
-    const phoneNumberId = phoneData[0].id;
-    const businessPhoneNumber = phoneData[0].display_phone_number;
-
-    console.log('✅ Retrieved embedded signup details:', { wabaId, phoneNumberId, businessPhoneNumber });
-
-    // Step 6: Connect WhatsApp
+    // Step 3: Connect WhatsApp
     const integration = await whatsappIntegrationService.connectWhatsApp(req.userId, {
-      wabaId,
-      phoneNumberId,
+      wabaId: waba_id,
+      phoneNumberId: phone_number_id,
       businessPhoneNumber,
       accessToken,
       appId
