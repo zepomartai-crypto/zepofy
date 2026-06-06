@@ -13,6 +13,7 @@ const WhatsAppIntegration = ({ successMessage, errorMessage, setSuccessMessage, 
     const { refreshStatus } = useIntegration();
     const [loading, setLoading] = useState(true);
     const [connecting, setConnecting] = useState(false);
+    const [fbLoading, setFbLoading] = useState(false);
     const [whatsappInfo, setWhatsappInfo] = useState(null);
     const [copied, setCopied] = useState('');
 
@@ -66,6 +67,7 @@ const WhatsAppIntegration = ({ successMessage, errorMessage, setSuccessMessage, 
 
     // Load Meta Facebook SDK for Embedded Signup
     useEffect(() => {
+        // Must define fbAsyncInit BEFORE the script loads
         window.fbAsyncInit = function () {
             window.FB.init({
                 appId: import.meta.env.VITE_META_APP_ID,
@@ -73,59 +75,69 @@ const WhatsAppIntegration = ({ successMessage, errorMessage, setSuccessMessage, 
                 xfbml: true,
                 version: 'v19.0'
             });
+            console.log('✅ FB SDK initialized');
         };
 
-        // Load SDK script
+        // Only load script once
         if (!document.getElementById('facebook-jssdk')) {
             const script = document.createElement('script');
             script.id = 'facebook-jssdk';
             script.src = 'https://connect.facebook.net/en_US/sdk.js';
+            script.async = true;
+            script.defer = true;
             document.body.appendChild(script);
         }
     }, []);
 
     const handleFacebookConnect = () => {
         if (!window.FB) {
-            setErrorMessage("Facebook SDK not loaded yet. Please wait and try again.");
+            setErrorMessage('Facebook SDK is still loading. Please wait 2 seconds and try again.');
             return;
         }
 
-        setConnecting(true);
+        setFbLoading(true);
         setErrorMessage('');
         setSuccessMessage('');
 
+        const exchangeCodeWithBackend = (code) => {
+            api
+                .post("/integrations/whatsapp/embedded-signup", { code })
+                .then(async (res) => {
+                    if (res.data.success) {
+                        setSuccessMessage("WhatsApp connected via Facebook successfully!");
+                        await refreshStatus();
+                        fetchStatus();
+                    } else {
+                        setErrorMessage(res.data.error || "Failed to connect via Facebook");
+                    }
+                })
+                .catch((err) => {
+                    console.error("Facebook connect backend error:", err);
+                    setErrorMessage(err.response?.data?.error || "Failed to connect via Facebook");
+                })
+                .finally(() => {
+                    setFbLoading(false);
+                });
+        };
+
         window.FB.login(
-            (response) => {
+            function(response) {
                 if (response.authResponse && response.authResponse.code) {
-                    const code = response.authResponse.code;
-                    api
-                        .post("/integrations/whatsapp/embedded-signup", { code })
-                        .then(async (res) => {
-                            if (res.data.success) {
-                                setSuccessMessage("WhatsApp connected via Facebook successfully!");
-                                await refreshStatus();
-                                fetchStatus();
-                            } else {
-                                setErrorMessage(res.data.error || "Failed to connect via Facebook");
-                            }
-                        })
-                        .catch((err) => {
-                            console.error("Facebook connect backend error:", err);
-                            setErrorMessage(err.response?.data?.error || "Failed to connect via Facebook");
-                        })
-                        .finally(() => {
-                            setConnecting(false);
-                        });
+                    exchangeCodeWithBackend(response.authResponse.code);
                 } else {
-                    setErrorMessage("Facebook login was cancelled or failed.");
-                    setConnecting(false);
+                    setFbLoading(false);
+                    setErrorMessage('Facebook login was cancelled or failed.');
                 }
             },
             {
                 config_id: import.meta.env.VITE_META_CONFIG_ID,
-                response_type: "code",
+                response_type: 'code',
                 override_default_response_type: true,
-                extras: { setup: {}, featureType: "", sessionInfoVersion: "3" },
+                extras: {
+                    setup: {},
+                    featureType: '',
+                    sessionInfoVersion: '3'
+                }
             }
         );
     };
@@ -365,11 +377,11 @@ const WhatsAppIntegration = ({ successMessage, errorMessage, setSuccessMessage, 
                                 <button
                                     type="button"
                                     onClick={handleFacebookConnect}
-                                    disabled={connecting}
+                                    disabled={fbLoading}
                                     className="w-full flex items-center justify-center px-6 py-4.5 bg-[#1877F2] hover:bg-[#166fe5] text-white rounded-[20px] font-semibold transition-colors disabled:opacity-50 text-base shadow-sm"
                                 >
                                     <FacebookIcon />
-                                    {connecting ? "Connecting..." : "Connect with Facebook"}
+                                    {fbLoading ? "Connecting..." : "Connect with Facebook"}
                                 </button>
 
                                 <div className="flex items-center my-6">
