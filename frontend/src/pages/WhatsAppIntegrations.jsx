@@ -72,9 +72,15 @@ export default function WhatsAppIntegrations() {
         appId: import.meta.env.VITE_META_APP_ID,
         autoLogAppEvents: true,
         xfbml: true,
-        version: 'v19.0'
+        version: 'v25.0'
       });
       console.log('✅ FB SDK initialized');
+
+      window.addEventListener('message', (event) => {
+        if (event.origin !== "https://www.facebook.com") return;
+        // store WABA and phone IDs from session info if present
+        console.log('Meta session info:', event.data);
+      });
     };
 
     // Only load script once
@@ -142,11 +148,7 @@ export default function WhatsAppIntegrations() {
         config_id: import.meta.env.VITE_META_CONFIG_ID,
         response_type: 'code',
         override_default_response_type: true,
-        extras: {
-          setup: {},
-          featureType: '',
-          sessionInfoVersion: '3'
-        }
+        extras: { "version": "v4" }
       }
     );
   };
