@@ -1,0 +1,659 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-poppins: "Poppins", sans-serif;
+
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-soft: 0 2px 4px 0 rgb(0 0 0 / 0.02), 0 1px 2px -1px rgb(0 0 0 / 0.02);
+  
+  /* Standard Tailwind Color Overrides for Global Swap */
+  --color-blue-500: #6366F1; /* Indigo */
+  --color-blue-600: #4F46E5; /* Indigo */
+  --color-blue-700: #4338CA; /* Indigo */
+  
+  /* Legacy Variable Mapping for backward compatibility */
+  --brand-primary: #4F46E5; /* Deep Indigo */
+  --brand-accent: #312E81;
+  --brand-light: #EEF2FF;
+  --page-bg: #F8FAFC; /* Very soft slate */
+  --sidebar-bg: #FFFFFF; /* Pure White */
+  --sidebar-border: #F1F5F9;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --border: #F1F5F9;
+
+  /* Shining Blue System Utilities */
+  --color-shine-from: #4F46E5;
+  --color-shine-to: #3730A3;
+
+  /* Commerce Upgrade Design Tokens */
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --status-approved: #10B981;
+  --status-pending: #F59E0B;
+  --status-rejected: #EF4444;
+
+  --animate-fadeIn: fadeIn 0.4s ease-out;
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@layer base {
+  html {
+    font-size: 14px;
+    @media (min-width: 1280px) {
+      font-size: 15px;
+    }
+  }
+
+  body {
+    @apply text-slate-800 antialiased bg-[#F8FAFC];
+    font-family: var(--font-inter);
+  }
+
+  /* 🔥 GLOBAL INTERACTIVE CURSOR */
+  button, 
+  a, 
+  select, 
+  label, 
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="checkbox"],
+  input[type="radio"],
+  .cursor-pointer {
+    cursor: pointer !important;
+  }
+}
+
+@layer components {
+  .card-compact {
+    @apply bg-white border border-slate-100 rounded-lg p-4 shadow-sm transition-all hover:shadow-md;
+  }
+
+  .btn-compact {
+    @apply h-9 px-3 py-2 rounded-md font-medium text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-2;
+  }
+
+  .input-compact {
+    @apply h-9 px-3 py-2 rounded-md border border-slate-200 bg-white text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500;
+  }
+
+  .table-compact th {
+    @apply py-2 px-3 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50 border-b border-slate-100;
+  }
+
+  .table-compact td {
+    @apply py-2 px-3 text-sm text-slate-600 border-b border-slate-50;
+  }
+}
+
+
+.app-container {
+  width: 100%;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+
+/* Force inner page wrappers to be transparent so the global background blends with Navbar */
+main .min-h-screen,
+main .bg-gray-100,
+main .bg-slate-50 {
+  background: transparent !important;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+.heading-font {
+  font-family: 'Outfit', sans-serif !important;
+}
+
+.sidebar-font {
+  font-family: 'Poppins', sans-serif !important;
+}
+
+/* Scrollbar Hiding Utility */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+
+/* REMOVE HARSH BORDERS */
+* {
+  border-color: var(--border);
+}
+
+/* REMOVE TABLE BORDERS */
+table,
+th,
+td {
+  border: none !important;
+}
+
+/* Sidebar Slide Animation */
+.sidebar-animate {
+  animation: slideIn 0.4s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* UI Components */
+@utility bg-shine {
+  background: linear-gradient(135deg, var(--color-shine-from) 0%, #3730A3 50%, var(--color-shine-to) 100%);
+}
+
+@utility shadow-shine {
+  box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
+}
+
+.card-premium {
+  @apply bg-white border border-slate-100 rounded-2xl p-6 shadow-sm transition-all hover:shadow-md;
+}
+
+.btn-primary {
+  @apply bg-shine text-white px-4 py-2 font-bold text-sm rounded-xl transition-all shadow-shine hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer border-none;
+}
+
+.btn-secondary {
+  @apply bg-white text-slate-700 border border-slate-200 px-4 py-2 font-semibold text-sm rounded-lg transition-all hover:bg-slate-50 active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer shadow-sm;
+}
+
+/* Glassmorphism & Status Badges */
+.glass-panel {
+  @apply bg-white/70 backdrop-blur-md border border-white/40 shadow-soft;
+}
+
+.status-badge {
+  @apply px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 border;
+}
+
+.status-badge-approved {
+  @apply bg-emerald-50 text-emerald-600 border-emerald-100;
+}
+
+.status-badge-pending {
+  @apply bg-amber-50 text-amber-600 border-amber-100;
+}
+
+.status-badge-rejected {
+  @apply bg-rose-50 text-rose-600 border-rose-100;
+}
+
+/* Sidebar Hover UX */
+.sidebar-item {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #475569; /* Slate 600 */
+}
+
+.sidebar-item:hover {
+  background: var(--sidebar-hover);
+  color: var(--brand-primary);
+}
+
+/* Active Link Highlight */
+.sidebar-active {
+  @apply bg-shine text-white font-bold shadow-shine rounded-2xl;
+}
+
+.sidebar-active .sidebar-icon {
+  color: white !important;
+}
+
+/* Icon Animation */
+.sidebar-icon {
+  transition: transform 0.25s ease;
+}
+
+.sidebar-item:hover .sidebar-icon {
+  transform: scale(1.15);
+}
+
+/* Active press */
+.sidebar-item:active {
+  transform: translateX(3px) scale(0.98);
+}
+
+/* Fade animation moved to @theme block */
+
+/* ================= TEMPLATE UI SYSTEM (NEW) ================= */
+
+/* Inputs */
+.tpl-input,
+.tpl-select,
+.tpl-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  font-size: 0.95rem;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.tpl-input:focus,
+.tpl-select:focus,
+.tpl-textarea:focus {
+  outline: none;
+  border-color: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25);
+}
+
+/* Labels */
+.tpl-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+/* Buttons */
+.tpl-btn-primary {
+  background: var(--gradient-brand);
+  color: white;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.tpl-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(34, 197, 94, 0.25);
+}
+
+.tpl-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tpl-btn-secondary {
+  color: var(--text-primary);
+  background: #F1F5F9;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  border: 1px solid var(--border);
+}
+
+.tpl-btn-secondary:hover {
+  background: #E2E8F0;
+}
+
+/* Warnings */
+.tpl-warning {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+}
+
+/* WhatsApp Preview */
+/* ================= TEMPLATE PREVIEW – CLEAN & FIT ================= */
+
+.template-card {
+  width: 100%;
+}
+
+/* Preview wrapper */
+.tpl-preview-wrapper {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+}
+
+
+/* Bubble uses full card width */
+.tpl-preview-bubble {
+  width: 100%;
+  max-width: 100%;
+  background: #dcf8c6;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+
+.tpl-preview-body {
+  font-size: 13px;
+  line-height: 1.45;
+  color: #111;
+  white-space: pre-wrap;
+}
+
+/* Footer */
+.tpl-preview-footer {
+  font-size: 11px;
+  color: #667781;
+  text-align: right;
+}
+
+/* Buttons */
+.tpl-preview-btn {
+  width: 100%;
+  padding: 9px;
+  background: #fff;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #008069;
+  text-align: center;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+
+
+/* ================= WHATSAPP THEME ================= */
+
+:root {
+  --wa-green: #005c4b;
+  --wa-green-light: #dcf8c6;
+  --wa-bg: #efeae2;
+  --wa-text: #111b21;
+  --wa-muted: #667781;
+}
+
+/* Chat background */
+.wa-bg {
+  background-color: var(--wa-bg);
+  background-image: url("https://web.whatsapp.com/img/bg-chat-tile_8e1e90.png");
+}
+
+/* Header */
+.wa-header {
+  height: 64px;
+  background: var(--wa-green);
+  color: white;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+}
+
+/* Bubble base */
+.wa-bubble {
+  padding: 8px 12px;
+  font-size: 14px;
+  line-height: 1.45;
+  border-radius: 8px;
+  max-width: 65%;
+  word-break: break-word;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+}
+
+/* Outgoing */
+.wa-out {
+  background: var(--brand-light);
+  border-top-right-radius: 2px;
+}
+
+/* Incoming */
+.wa-in {
+  background: #ffffff;
+  border-top-left-radius: 2px;
+  border: 1px solid var(--border);
+}
+
+/* Input bar */
+.wa-input {
+  height: 62px;
+  background: #f0f2f5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  border-top: 1px solid #e9edef;
+}
+
+/* Chat list */
+.wa-chat-item {
+  padding: 12px 14px;
+  display: flex;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.wa-chat-item:hover {
+  background: #f5f6f6;
+}
+
+.wa-chat-active {
+  background: #f0f2f5;
+}
+
+
+/* Wrapper */
+.tpl-preview-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  background: #f0f2f5;
+}
+
+/* WhatsApp bubble */
+.tpl-preview-bubble {
+  width: 360px;
+  height: 420px;
+  background: #dcf8c6;
+  border-radius: 12px;
+  padding: 14px 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Header */
+.tpl-preview-header {
+  font-weight: 600;
+  font-size: 14px;
+  color: #111;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Body */
+.tpl-preview-body {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #111;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-y: auto;
+  padding-top: 6px;
+}
+
+/* Footer (timestamp feel) */
+.tpl-preview-footer {
+  font-size: 11px;
+  color: #667781;
+  text-align: right;
+  margin-top: 4px;
+}
+
+/* Buttons wrapper */
+.tpl-preview-buttons {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* WhatsApp-style buttons */
+.tpl-preview-btn {
+  text-align: center;
+  padding: 10px;
+  background: #ffffff;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #008069;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+/* ================= FLOW BUILDER NODE ENHANCEMENTS ================= */
+
+.media-container {
+  width: 100%;
+  height: 220px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.media-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wa-template {
+  background: #e5ddd5;
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+}
+
+.wa-header {
+  background: #075e54;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 10px 10px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-bottom: 0;
+}
+
+.wa-body {
+  background: white;
+  padding: 14px;
+  border-radius: 0 0 10px 10px;
+  font-size: 14px;
+  color: #111;
+  line-height: 1.6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.wa-body.no-header {
+  border-radius: 10px;
+}
+
+
+.wa-buttons {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wa-buttons button {
+  width: 100%;
+  padding: 9px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #008069;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: default;
+}
+
+/* ================= LIVE CHAT UI SYSTEM ================= */
+.message-bubble {
+  @apply relative px-3 py-2 rounded-xl max-w-[85%] md:max-w-[70%] shadow-sm animate-fadeIn;
+}
+
+.message-outgoing {
+  @apply bg-[#dcf8c6] text-[#111b21] rounded-tr-none ml-auto;
+}
+
+.message-incoming {
+  @apply bg-white text-[#111b21] rounded-tl-none mr-auto border border-slate-100;
+}
+
+.whatsapp-chat-bg {
+  @apply absolute inset-0 pointer-events-none;
+  background-color: #efeae2;
+  background-image: url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png");
+  opacity: 0.4;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
