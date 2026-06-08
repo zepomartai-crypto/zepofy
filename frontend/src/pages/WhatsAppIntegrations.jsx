@@ -281,16 +281,14 @@ export default function WhatsAppIntegrations() {
   };
 
   const handleDisconnect = async () => {
-    if (!confirm("Are you sure you want to disconnect WhatsApp? This will stop all messaging functionality.")) {
-      return;
-    }
+    if (!confirm("Are you sure you want to disconnect WhatsApp? This will stop all messaging.")) return;
 
     setLoading(true);
     try {
       const res = await api.post("/integrations/whatsapp/disconnect");
 
       if (res.data.success) {
-        setSuccess("WhatsApp disconnected successfully!");
+        setSuccess("WhatsApp disconnected successfully");
         setConnected(false);
         setIntegration(null);
         setFormData({
@@ -573,7 +571,7 @@ export default function WhatsAppIntegrations() {
                               className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-red-50 border border-red-200 hover:bg-red-100 text-red-700 rounded-[12px] font-semibold transition-colors disabled:opacity-50"
                             >
                               <FiXCircle className="w-4 h-4" />
-                              {loading ? "Disconnecting..." : "Disconnect"}
+                              {loading ? "Revoking..." : "REVOKE ACCESS"}
                             </button>
                           )}
                         </div>
