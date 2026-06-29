@@ -452,7 +452,9 @@ exports.embeddedSignup = async (req, res) => {
       phoneNumberId: phone_number_id,
       businessPhoneNumber,
       accessToken,
-      appId
+      appId,
+      coexistenceEnabled: true,
+      connectionType: 'coexistence'
     });
 
     console.log('✅ WhatsApp connected successfully via embedded signup for user:', req.userId);

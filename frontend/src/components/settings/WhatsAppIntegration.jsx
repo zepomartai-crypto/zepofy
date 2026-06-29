@@ -185,7 +185,13 @@ const WhatsAppIntegration = ({ successMessage, errorMessage, setSuccessMessage, 
                 config_id: import.meta.env.VITE_META_CONFIG_ID,
                 response_type: 'code',
                 override_default_response_type: true,
-                extras: { "version": "v4" }
+                extras: {
+                    setup: {},
+                    featureName: 'whatsapp_embedded_signup',
+                    sessionInfoVersion: '3',
+                    feature_type: 'COEXISTENCE'
+                },
+                scope: 'whatsapp_business_management,whatsapp_business_messaging,business_management'
             }
         );
     };

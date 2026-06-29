@@ -103,7 +103,7 @@ class WhatsAppIntegrationService {
 
   // Connect WhatsApp (validate and update status)
   async connectWhatsApp(userId, integrationData) {
-    const { accessToken, phoneNumberId, wabaId, appId, businessPhoneNumber } = integrationData;
+    const { accessToken, phoneNumberId, wabaId, appId, businessPhoneNumber, coexistenceEnabled, connectionType } = integrationData;
 
     // 1️⃣ Verify token with Meta
     const verification = await this.verifyToken(accessToken, phoneNumberId);
@@ -123,6 +123,8 @@ class WhatsAppIntegrationService {
       status: "connected",
       connectedAt: new Date(),
       lastVerifiedAt: new Date(),
+      coexistenceEnabled: coexistenceEnabled || false,
+      connectionType: connectionType || 'standard',
     });
 
     // 3️⃣ Subscribe webhook (optional - don't block connection)

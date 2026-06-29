@@ -85,6 +85,14 @@ const whatsappIntegrationSchema = new mongoose.Schema(
       isActive: { type: Boolean, default: false },
       autoReplyOnSelection: { type: Boolean, default: true },
     },
+    coexistenceEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    connectionType: {
+      type: String,
+      default: 'standard',
+    },
     lastPermCheck: {
       type: Date,
     },
