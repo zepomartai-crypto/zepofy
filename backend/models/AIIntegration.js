@@ -19,7 +19,7 @@ const aiIntegrationSchema = new mongoose.Schema(
     },
     apiKey: {
       type: String,
-      required: true,
+      required: false,
       select: false,
     },
     model: {

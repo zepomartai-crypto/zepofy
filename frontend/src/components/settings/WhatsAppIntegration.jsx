@@ -88,7 +88,7 @@ const WhatsAppIntegration = ({ successMessage, errorMessage, setSuccessMessage, 
                     const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
                     console.log('Parsed FB postMessage:', data);
                     if (data.type === 'WA_EMBEDDED_SIGNUP') {
-                        if (data.event === 'FINISH') {
+                        if (data.event === 'FINISH' || data.event === 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING') {
                             sessionDataRef.current = {
                                 phone_number_id: data.data.phone_number_id,
                                 waba_id: data.data.waba_id
