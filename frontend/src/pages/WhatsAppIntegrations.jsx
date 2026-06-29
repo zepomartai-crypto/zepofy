@@ -82,8 +82,10 @@ export default function WhatsAppIntegrations() {
 
       window.addEventListener('message', (event) => {
         if (event.origin !== "https://www.facebook.com") return;
+        console.log('Raw FB postMessage event:', event.data);
         try {
           const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+          console.log('Parsed FB postMessage:', data);
           if (data.type === 'WA_EMBEDDED_SIGNUP') {
             if (data.event === 'FINISH') {
               sessionDataRef.current = {
@@ -93,7 +95,9 @@ export default function WhatsAppIntegrations() {
               console.log('Meta session info stored:', sessionDataRef.current);
             }
           }
-        } catch(e) {}
+        } catch(e) {
+          console.error('Error parsing FB postMessage event:', e);
+        }
       });
     };
 
@@ -183,7 +187,7 @@ export default function WhatsAppIntegrations() {
                 setFbLoading(false);
                 setError('Facebook login completed, but WABA session info was not received. Please try again.');
               }
-            }, 5000);
+            }, 20000);
           }
         } else {
           setFbLoading(false);
