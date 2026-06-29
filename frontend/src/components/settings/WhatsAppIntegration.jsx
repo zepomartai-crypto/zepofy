@@ -189,7 +189,7 @@ const WhatsAppIntegration = ({ successMessage, errorMessage, setSuccessMessage, 
                     setup: {},
                     featureName: 'whatsapp_embedded_signup',
                     sessionInfoVersion: '3',
-                    feature_type: 'COEXISTENCE'
+                    featureType: 'whatsapp_business_app_onboarding'
                 },
                 scope: 'whatsapp_business_management,whatsapp_business_messaging,business_management'
             }
