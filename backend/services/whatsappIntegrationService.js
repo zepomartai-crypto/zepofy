@@ -129,7 +129,7 @@ class WhatsAppIntegrationService {
 
     // 3️⃣ Subscribe webhook (optional - don't block connection)
     try {
-      await this.subscribeToWebhooks(integration);
+      await this.subscribeToWebhooks(integration, accessToken);
     } catch (webhookError) {
       console.warn('⚠️ Webhook subscription failed (non-critical):', webhookError.message);
       // Don't fail the entire connection if webhook setup fails
@@ -166,23 +166,24 @@ class WhatsAppIntegrationService {
   }
 
   // Subscribe to webhooks for the phone number
-  async subscribeToWebhooks(integration) {
+  async subscribeToWebhooks(integration, plainAccessToken) {
     try {
       const webhookUrl = `${this.webhookBaseUrl}/api/webhook/whatsapp`;
+      const token = plainAccessToken || integration.decryptToken();
 
       const response = await axios.post(
         `https://graph.facebook.com/v24.0/${integration.phoneNumberId}/subscribed_apps`,
         {},
         {
           headers: {
-            'Authorization': `Bearer ${integration.accessToken}`
+            'Authorization': `Bearer ${token}`
           }
         }
       );
 
       // Configure webhook if not already configured
       if (!integration.webhookConfigured) {
-        await this.configureWebhook(integration);
+        await this.configureWebhook(integration, token);
         integration.webhookConfigured = true;
       }
 
@@ -199,9 +200,10 @@ class WhatsAppIntegrationService {
   }
 
   // Configure webhook for the app
-  async configureWebhook(integration) {
+  async configureWebhook(integration, plainAccessToken) {
     try {
       const webhookUrl = `${this.webhookBaseUrl}/api/webhook/whatsapp`;
+      const token = plainAccessToken || integration.decryptToken();
 
       await axios.post(
         `https://graph.facebook.com/v24.0/${integration.appId}/subscriptions`,
@@ -213,7 +215,7 @@ class WhatsAppIntegrationService {
         },
         {
           headers: {
-            'Authorization': `Bearer ${integration.accessToken}`
+            'Authorization': `Bearer ${token}`
           }
         }
       );
